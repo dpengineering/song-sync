@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spacebar Timer</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    #log {
+      white-space: pre-line;
+      background: #f0f0f0;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    #export {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Press Spacebar to Track Time</h1>
+  <p>Press <strong>spacebar</strong> to track timing. Press <strong>q</strong> to quit and show results.</p>
+  <div id="log">Waiting for input...</div>
+  <button id="export">Export Arduino Code</button>
+  <pre id="arduinoCode"></pre>
+
+  <script>
+    let lastPressTime = null;
+    let startTime = null;
+    let isRunning = true;
+    const logDiv = document.getElementById("log");
+    const exportBtn = document.getElementById("export");
+    const arduinoCodeDiv = document.getElementById("arduinoCode");
+    let log = [];
+    let delays = [];
+    let totalElapsed = 0;
+
+    document.addEventListener("keydown", (event) => {
+      if (!isRunning) return;
+
+      const now = Date.now();
+
+      if (event.key === " ") {
+        if (startTime === null) {
+          startTime = now;
+          lastPressTime = now;
+          log.push("Started tracking...");
+        } else {
+          const delay = now - lastPressTime;
+          lastPressTime = now;
+          delays.push(delay);
+          log.push(`Delay: ${delay} ms`);
+        }
+      }
+
+      if (event.key.toLowerCase() === "q") {
+        isRunning = false;
+        totalElapsed = now - startTime;
+        log.push(`\nStopped.\nTotal elapsed time: ${totalElapsed} ms`);
+      }
+
+      logDiv.textContent = log.join("\n");
+    });
+
+    exportBtn.addEventListener("click", () => {
+      if (delays.length === 0) {
+        arduinoCodeDiv.textContent = "No delays recorded yet.";
+        return;
+      }
+
+      const code = delays.map(d => `delay(${d}); pulse();`).join("\n");
+      arduinoCodeDiv.textContent = code;
+    });
+  </script>
+</body>
+</html>
