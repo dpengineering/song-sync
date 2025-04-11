@@ -17,13 +17,35 @@
     #export {
       margin-top: 20px;
     }
+    #exportContainer {
+      margin-top: 20px;
+    }
+    #customText, #offsetValue, #offsetSign {
+      margin-left: 10px;
+      padding: 4px;
+    }
+    #offsetContainer {
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
-  <h1>Press Spacebar to Track Time</h1>
+  <h1>Welcome to Spacebar Sync</h1>
   <p>Press <strong>spacebar</strong> to track timing. Press <strong>q</strong> to quit and show results.</p>
   <div id="log">Waiting for input...</div>
-  <button id="export">Export Arduino Code</button>
+
+  <div id="exportContainer">
+    <button id="export">Export Arduino Code</button>
+    <input type="text" id="customText" placeholder="Extra code (e.g. pulse())">
+    <div id="offsetContainer">
+      <input type="checkbox" id="enableOffset">
+      <label for="enableOffset">Enable delay offset:</label>
+      <select id="offsetSign">
+        <option value="-">-</option>
+        <option value="+">+</option>
+      </select>
+    </div>
+  </div>
   <pre id="arduinoCode"></pre>
 
   <script>
@@ -32,7 +54,10 @@
     let isRunning = true;
     const logDiv = document.getElementById("log");
     const exportBtn = document.getElementById("export");
+    const customTextInput = document.getElementById("customText");
     const arduinoCodeDiv = document.getElementById("arduinoCode");
+    const enableOffsetCheckbox = document.getElementById("enableOffset");
+    const offsetSignSelect = document.getElementById("offsetSign");
     let log = [];
     let delays = [];
     let totalElapsed = 0;
@@ -70,7 +95,15 @@
         return;
       }
 
-      const code = delays.map(d => `delay(${d}); pulse();`).join("\n");
+      const extra = customTextInput.value.trim();
+      const useOffset = enableOffsetCheckbox.checked;
+      const offsetSign = offsetSignSelect.value;
+
+      const code = delays.map(d => {
+        const delayExpr = useOffset ? `${d} ${offsetSign} offset` : d;
+        return `delay(${delayExpr});${extra ? ' ' + extra : ''}`;
+      }).join("\n");
+
       arduinoCodeDiv.textContent = code;
     });
   </script>
