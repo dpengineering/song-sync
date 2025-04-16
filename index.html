@@ -31,7 +31,7 @@
 </head>
 <body>
   <h1>Welcome to Spacebar Sync</h1>
-  <p>Press <strong>spacebar</strong> to track timing. Press <strong>q</strong> to quit and show results.</p>
+  <p>Press <strong>spacebar</strong> to track timing. Press <strong>q</strong> to quit and show results. Press and hold <strong>p</strong> to log a pulse duration.</p>
   <div id="log">Waiting for input...</div>
 
   <div id="exportContainer">
@@ -61,10 +61,12 @@
     let log = [];
     let delays = [];
     let totalElapsed = 0;
+    let holdStart = null;
+    let lastPulseEnd = null;
+    let actions = [];
 
     document.addEventListener("keydown", (event) => {
       if (!isRunning) return;
-
       const now = Date.now();
 
       if (event.key === " ") {
@@ -76,21 +78,47 @@
           const delay = now - lastPressTime;
           lastPressTime = now;
           delays.push(delay);
+          actions.push({ type: 'delay', value: delay });
           log.push(`Delay: ${delay} ms`);
         }
       }
 
-      if (event.key.toLowerCase() === "q") {
+      if (event.key && event.key.toLowerCase() === "q") {
         isRunning = false;
         totalElapsed = now - startTime;
         log.push(`\nStopped.\nTotal elapsed time: ${totalElapsed} ms`);
+      }
+
+      if (event.key && event.key.toLowerCase() === "p" && holdStart === null) {
+        holdStart = now;
+      }
+
+      logDiv.textContent = log.join("\n");
+    });
+
+    document.addEventListener("keyup", (event) => {
+      if (!isRunning) return;
+      const now = Date.now();
+
+      if (event.key && event.key.toLowerCase() === "p" && holdStart !== null) {
+        const holdDuration = now - holdStart;
+        if (lastPulseEnd !== null) {
+          const delay = holdStart - lastPulseEnd;
+          delays.push(delay);
+          actions.push({ type: 'delay', value: delay });
+          log.push(`Delay: ${delay} ms`);
+        }
+        actions.push({ type: 'pulse', value: holdDuration });
+        log.push(`pulse(${holdDuration})`);
+        lastPulseEnd = now;
+        holdStart = null;
       }
 
       logDiv.textContent = log.join("\n");
     });
 
     exportBtn.addEventListener("click", () => {
-      if (delays.length === 0) {
+      if (actions.length === 0) {
         arduinoCodeDiv.textContent = "No delays recorded yet.";
         return;
       }
@@ -99,9 +127,13 @@
       const useOffset = enableOffsetCheckbox.checked;
       const offsetSign = offsetSignSelect.value;
 
-      const code = delays.map(d => {
-        const delayExpr = useOffset ? `${d} ${offsetSign} offset` : d;
-        return `delay(${delayExpr});${extra ? ' ' + extra : ''}`;
+      const code = actions.map(action => {
+        if (action.type === 'delay') {
+          const delayExpr = useOffset ? `${action.value} ${offsetSign} offset` : action.value;
+          return `delay(${delayExpr});${extra ? ' ' + extra : ''}`;
+        } else if (action.type === 'pulse') {
+          return `pulse(${action.value});`;
+        }
       }).join("\n");
 
       arduinoCodeDiv.textContent = code;
