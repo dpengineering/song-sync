@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Offline Envelope Visualizer</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      /* start fully dark */
+      background-color: hsl(0, 0%, 5%);
+      transition: background-color 0.05s linear;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    audio {
+      width: 80%;
+      max-width: 600px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <audio id="audio" controls src="five_hours.mp4"></audio>
+    <button id="export">Export Brightness</button>
+    <p id="export-status" style="font-family: sans-serif; color: green;"></p>
+  </div>
+
+  <script>
+    let envelope, hopTime;
+    fetch('envelope.json')
+      .then(r => r.json())
+      .then(data => {
+        envelope = data.envelope;
+        hopTime = data.hop_time;
+      });
+
+    const audio = document.getElementById('audio');
+
+    function animate() {
+      const t = audio.currentTime;
+      const idx = Math.floor(t / hopTime);
+      if (envelope && idx < envelope.length) {
+        // Map envelope [0…1] → lightness [5%…95%]
+        const lightness = 5 + envelope[idx] * 90;
+        document.body.style.backgroundColor = `hsl(0, 0%, ${lightness}%)`;
+      }
+      requestAnimationFrame(animate);
+    }
+
+    audio.addEventListener('play', () => {
+      if (audio.readyState >= 2) {
+        requestAnimationFrame(animate);
+      }
+    });
+
+    document.getElementById('export').addEventListener('click', () => {
+      if (!envelope) return;
+
+      // Keep the float values (rounded to 4 decimal places for neatness)
+      const brightnessArray = envelope.map(e => e.toFixed(2));
+      const asCArray = `{ ${brightnessArray.join(', ')} }`;
+
+      const blob = new Blob([asCArray], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'brightness_array.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      // ✅ Show success message
+      const status = document.getElementById('export-status');
+      status.textContent = `✅ Successfully exported ${brightnessArray.length} float values.`;
+      setTimeout(() => status.textContent = '', 4000);
+    });
+
+
+  </script>
+</body>
+
+</html>
