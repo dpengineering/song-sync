@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Spacebar Timer</title>
+  <title>Song Sync</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
   <style>
     body {
       font-family: sans-serif;
@@ -20,23 +21,29 @@
     #exportContainer {
       margin-top: 20px;
     }
-    #customText, #offsetValue, #offsetSign {
+    #customText, #customDelayName, #offsetValue, #offsetSign {
       margin-left: 10px;
       padding: 4px;
     }
-    #offsetContainer {
+    #offsetContainer, #optionsContainer {
       margin-top: 10px;
+    }
+    #copyButton {
+      margin-left: 10px;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h1>Welcome to Spacebar Sync</h1>
+  <h1>Welcome to Song Sync</h1>
   <p>Press <strong>spacebar</strong> to track timing. Press <strong>q</strong> to quit and show results. Press and hold <strong>p</strong> to log a pulse duration.</p>
   <div id="log">Waiting for input...</div>
 
   <div id="exportContainer">
     <button id="export">Export Arduino Code</button>
+    <button id="copyButton">Copy to Clipboard</button>
     <input type="text" id="customText" placeholder="Extra code (e.g. pulse())">
+    <input type="text" id="customDelayName" placeholder="Delay function name (e.g. delay)">
     <div id="offsetContainer">
       <input type="checkbox" id="enableOffset">
       <label for="enableOffset">Enable delay offset:</label>
@@ -45,6 +52,10 @@
         <option value="+">+</option>
       </select>
     </div>
+    <div id="optionsContainer">
+      <input type="checkbox" id="cumulativeTiming" checked>
+      <label for="cumulativeTiming">Use cumulative timing (split mode)</label>
+    </div>
   </div>
   <pre id="arduinoCode"></pre>
 
@@ -52,12 +63,16 @@
     let lastPressTime = null;
     let startTime = null;
     let isRunning = true;
+    let hasQuitOnce = false;
     const logDiv = document.getElementById("log");
     const exportBtn = document.getElementById("export");
+    const copyBtn = document.getElementById("copyButton");
     const customTextInput = document.getElementById("customText");
+    const customDelayNameInput = document.getElementById("customDelayName");
     const arduinoCodeDiv = document.getElementById("arduinoCode");
     const enableOffsetCheckbox = document.getElementById("enableOffset");
     const offsetSignSelect = document.getElementById("offsetSign");
+    const cumulativeTimingCheckbox = document.getElementById("cumulativeTiming");
     let log = [];
     let delays = [];
     let totalElapsed = 0;
@@ -66,8 +81,26 @@
     let actions = [];
 
     document.addEventListener("keydown", (event) => {
-      if (!isRunning) return;
       const now = Date.now();
+
+      if (!isRunning && event.key.toLowerCase() === "q") {
+        isRunning = true;
+        hasQuitOnce = false;
+        lastPressTime = null;
+        startTime = null;
+        delays = [];
+        actions = [];
+        holdStart = null;
+        lastPulseEnd = null;
+        totalElapsed = 0;
+        log = ["Timer reset. Press spacebar to start again."];
+        logDiv.textContent = log.join("\n");
+        arduinoCodeDiv.textContent = "";
+        copyBtn.style.display = "none";
+        return;
+      }
+
+      if (!isRunning) return;
 
       if (event.key === " ") {
         if (startTime === null) {
@@ -75,7 +108,7 @@
           lastPressTime = now;
           log.push("Started tracking...");
         } else {
-          const delay = now - lastPressTime;
+          const delay = cumulativeTimingCheckbox.checked ? now - startTime : now - lastPressTime;
           lastPressTime = now;
           delays.push(delay);
           actions.push({ type: 'delay', value: delay });
@@ -87,6 +120,7 @@
         isRunning = false;
         totalElapsed = now - startTime;
         log.push(`\nStopped.\nTotal elapsed time: ${totalElapsed} ms`);
+        hasQuitOnce = true;
       }
 
       if (event.key && event.key.toLowerCase() === "p" && holdStart === null) {
@@ -124,19 +158,38 @@
       }
 
       const extra = customTextInput.value.trim();
+      const customDelayName = customDelayNameInput.value.trim() || "delay";
       const useOffset = enableOffsetCheckbox.checked;
       const offsetSign = offsetSignSelect.value;
+
+      let timeList = actions
+        .filter(action => action.type === 'delay')
+        .map(action => action.value)
+        .join(",");
+
+      const timeArrayLine = `const int times[] = {${timeList}};`;
 
       const code = actions.map(action => {
         if (action.type === 'delay') {
           const delayExpr = useOffset ? `${action.value} ${offsetSign} offset` : action.value;
-          return `delay(${delayExpr});${extra ? ' ' + extra : ''}`;
+          return `${customDelayName}(${delayExpr});${extra ? ' ' + extra : ''}`;
         } else if (action.type === 'pulse') {
           return `pulse(${action.value});`;
         }
       }).join("\n");
 
-      arduinoCodeDiv.textContent = code;
+      const fullCode = `${timeArrayLine}\n${code}`;
+      arduinoCodeDiv.textContent = fullCode;
+      copyBtn.style.display = "inline-block";
+    });
+
+    copyBtn.addEventListener("click", () => {
+      const code = arduinoCodeDiv.textContent;
+      if (!code) return;
+
+      navigator.clipboard.writeText(code)
+        .then(() => alert("Code copied to clipboard!"))
+        .catch(err => alert("Failed to copy: " + err));
     });
   </script>
 </body>
