@@ -1,0 +1,160 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f7f9;
+  --surface: #ffffff;
+  --surface-strong: #eef0f4;
+  --text: #1b1b1f;
+  --muted: #5f5f6b;
+  --border: #d7d7df;
+  --accent: #1f6feb;
+  --accent-contrast: #ffffff;
+  --shadow: 0 10px 30px rgba(27, 27, 31, 0.08);
+}
+
+body.dark {
+  color-scheme: dark;
+  --bg: #0f1115;
+  --surface: #171a21;
+  --surface-strong: #202530;
+  --text: #e8eaf0;
+  --muted: #a3a8b8;
+  --border: #303545;
+  --accent: #7db3ff;
+  --accent-contrast: #10131a;
+  --shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.appShell {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+h1 {
+  margin: 0;
+}
+
+p {
+  color: var(--muted);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.themeButton,
+#export,
+#copyButton {
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.themeButton {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 12px;
+  box-shadow: var(--shadow);
+}
+
+.themeButton:hover {
+  border-color: var(--accent);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+#log,
+#arduinoCode {
+  white-space: pre-line;
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+#log {
+  min-height: 120px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+#exportContainer {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.controlsRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+#export {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  padding: 10px 14px;
+}
+
+#customText,
+#customDelayName,
+#offsetSign {
+  width: 100%;
+  box-sizing: border-box;
+  margin-left: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+#offsetContainer,
+#optionsContainer {
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#copyButton {
+  display: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 10px 14px;
+}
+
+#arduinoCode {
+  margin-top: 20px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
